@@ -32,7 +32,7 @@ func TestGroup_Do_MultiThreadSingleCall(t *testing.T) {
 			defer waitGroup.Done()
 			startGroup.Done()
 
-			val, err := unit.Do("test group", func() (int, error) {
+			val, err := unit.Do(func() (int, error) {
 				startGroup.Wait() // Wait for all go routines to start.
 
 				// make this func long running by doing something compute heavy
@@ -71,7 +71,7 @@ func TestGroup_Do_Sequential(t *testing.T) {
 	waitGroup.Add(numTests)
 
 	for i := 0; i < numTests; i++ {
-		val, err := unit.Do("test group", func() (int, error) {
+		val, err := unit.Do(func() (int, error) {
 			defer waitGroup.Done()
 			counter++
 
@@ -95,7 +95,7 @@ func TestGroup_Do_Error(t *testing.T) {
 
 	var unit singleflight.Group[int]
 
-	val, err := unit.Do("test group", func() (int, error) {
+	val, err := unit.Do(func() (int, error) {
 		return 0, testError("test error")
 	})
 

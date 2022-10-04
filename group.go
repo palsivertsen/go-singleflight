@@ -8,40 +8,25 @@ type result[V any] struct {
 }
 
 type Group[V any] struct {
-	flightInterest map[string][]chan<- result[V]
-	once           sync.Once
-	mux            sync.Mutex
+	interests []chan<- result[V]
+	mux       sync.Mutex
 }
 
-func (g *Group[V]) init() {
-	g.once.Do(func() {
-		g.flightInterest = make(map[string][]chan<- result[V])
-	})
-}
-
-func (g *Group[V]) Do(key string, f func() (V, error)) (V, error) {
-	g.init()
-
+func (g *Group[V]) Do(f func() (V, error)) (V, error) {
 	interestChan := make(chan result[V], 1)
 
 	// register interest
 	g.mux.Lock()
-	flightInterests := g.flightInterest[key]
-	isFirstInterest := len(flightInterests) == 0
-	flightInterests = append(flightInterests, interestChan)
-	g.flightInterest[key] = flightInterests
+	isFirstInterest := len(g.interests) == 0
+	g.interests = append(g.interests, interestChan)
 	g.mux.Unlock()
 
 	if isFirstInterest {
 		go func() {
-			v, err := f()
-			r := result[V]{
-				v:   v,
-				err: err,
-			}
+			r := resultOf(f)
 			g.mux.Lock()
-			interests := g.flightInterest[key]
-			delete(g.flightInterest, key)
+			interests := g.interests
+			g.interests = make([]chan<- result[V], 0, 64)
 			g.mux.Unlock()
 			for _, ch := range interests {
 				ch <- r
@@ -51,4 +36,12 @@ func (g *Group[V]) Do(key string, f func() (V, error)) (V, error) {
 
 	res := <-interestChan
 	return res.v, res.err
+}
+
+func resultOf[V any](f func() (V, error)) result[V] {
+	v, err := f()
+	return result[V]{
+		v:   v,
+		err: err,
+	}
 }
