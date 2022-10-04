@@ -6,8 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"palsivertsen/go-singleflight"
-
+	"github.com/palsivertsen/go-singleflight"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,12 +16,13 @@ func TestGroup_Do_MultiThreadSingleCall(t *testing.T) {
 
 	const numTests = 100
 
-	var counter int
-	var counterMu sync.Mutex
-	var waitGroup sync.WaitGroup
-	var startGroup sync.WaitGroup
-
-	var unit singleflight.Group[int]
+	var (
+		counter    int
+		counterMu  sync.Mutex
+		waitGroup  sync.WaitGroup
+		startGroup sync.WaitGroup
+		unit       singleflight.Group[int]
+	)
 
 	waitGroup.Add(numTests)
 	startGroup.Add(numTests)
@@ -63,10 +63,11 @@ func TestGroup_Do_Sequential(t *testing.T) {
 
 	const numTests = 100
 
-	var counter int
-	var waitGroup sync.WaitGroup
-
-	var unit singleflight.Group[int]
+	var (
+		counter   int
+		waitGroup sync.WaitGroup
+		unit      singleflight.Group[int]
+	)
 
 	waitGroup.Add(numTests)
 

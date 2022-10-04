@@ -1,4 +1,4 @@
-module palsivertsen/go-singleflight
+module github.com/palsivertsen/go-singleflight
 
 go 1.19
 

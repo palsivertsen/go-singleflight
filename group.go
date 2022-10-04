@@ -21,7 +21,7 @@ type Group[V any] struct {
 // to Do will wait for the results of a ongoing workload, rather than starting
 // a new one. Once a workload finishes the same result is returned to all
 // callers and subsequent calls to Do will start a new workload.
-func (g *Group[V]) Do(f func() (V, error)) (V, error) {
+func (g *Group[V]) Do(workload func() (V, error)) (V, error) { //nolint:ireturn
 	interestChan := make(chan result[V], 1)
 
 	// register interest
@@ -32,23 +32,27 @@ func (g *Group[V]) Do(f func() (V, error)) (V, error) {
 
 	if isFirstInterest {
 		go func() {
-			r := resultOf(f)
+			res := resultOf(workload)
+
 			g.mux.Lock()
 			interests := g.interests
-			g.interests = make([]chan<- result[V], 0, 64)
+			g.interests = nil
 			g.mux.Unlock()
+
 			for _, ch := range interests {
-				ch <- r
+				ch <- res
 			}
 		}()
 	}
 
 	res := <-interestChan
+
 	return res.v, res.err
 }
 
 func resultOf[V any](f func() (V, error)) result[V] {
 	v, err := f()
+
 	return result[V]{
 		v:   v,
 		err: err,
