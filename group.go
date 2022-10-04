@@ -1,3 +1,6 @@
+// Package singleflight provides a duplicate function call suppression
+// mechanism. It's heavily inspired by
+// golang.org/x/sync/singleflight.package/singleflight
 package singleflight
 
 import "sync"
@@ -7,11 +10,17 @@ type result[V any] struct {
 	err error
 }
 
+// Group represents a collection of threads interested in the results of the
+// same workload.
 type Group[V any] struct {
 	interests []chan<- result[V]
 	mux       sync.Mutex
 }
 
+// Do ensures at most one workload is running at any given time. Multiple calls
+// to Do will wait for the results of a ongoing workload, rather than starting
+// a new one. Once a workload finishes the same result is returned to all
+// callers and subsequent calls to Do will start a new workload.
 func (g *Group[V]) Do(f func() (V, error)) (V, error) {
 	interestChan := make(chan result[V], 1)
 
